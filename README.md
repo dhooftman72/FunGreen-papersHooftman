@@ -12,7 +12,7 @@ This folder contains:
 -	GIStatsMain: contains the main steering code and the numbering of the different traits (LisFunc)
 -	MakeMeanTraits: collation of all segment and core variables, normalisation of all mean trait values against respective cores, including:
 -	CollateTraits: the calculation of all segment mean traits from species composition bespoke where needed or via:
--	StandNum: standardised function for mean trait calculation per segment , where possibly used.
+-	StandNum: standardised function for mean trait calculation per segment, used where possible.
 -	CalcStatsRadi: the actual statistics comparing cores with segments (“differences”), GLM’s of structural connectivity against mean trait values per segment (“Anova_Table”), and among scenario comparisons (“Distances_overview”). All per mean trait and with trait categories if applicable.
 
 To be added:
