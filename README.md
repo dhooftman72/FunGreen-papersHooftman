@@ -4,7 +4,7 @@ This folder contains the codes used for two MS’s  with working title
 1.	Arrested Dispersal, Eutrophication and External Seed Pressure Severely Degrade Grassland Green Infrastructure.
 2.	Higher Ecosystem Services Credits derive from targeted Grassland Green Infrastructure management.
 
-Codes and MS’s are copyrighted to DAP Hooftman, Lactuca: Environmental Data Analyses and Modelling, Diemen, The Netherlands.
+Codes are copyrighted to DAP Hooftman, Lactuca: Environmental Data Analyses and Modelling, Diemen, The Netherlands.  
 
 Data will be published elsewhere after publication.
 
