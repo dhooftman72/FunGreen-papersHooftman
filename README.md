@@ -1,6 +1,6 @@
 # FunGreen-papersHooftman-
 Codes belonging to two Manuscripts (papers hopefully)
-This folder contains the codes used for two MS’s  with working title 
+This folder contains the codes as Matlab functions used for two MS’s  with working title 
 1.	Arrested Dispersal, Eutrophication and External Seed Pressure Severely Degrade Grassland Green Infrastructure.
 2.	Higher Ecosystem Services Credits derive from targeted Grassland Green Infrastructure management.
 
