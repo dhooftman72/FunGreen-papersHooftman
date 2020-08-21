@@ -1,7 +1,7 @@
 # FunGreen-papersHooftman-
 Codes belonging to two Manuscripts (papers hopefully)
 This folder contains the codes as Matlab functions used for two MS’s  with working title 
-1.	Arrested Dispersal, Eutrophication and External Seed Pressure Severely Degrade Grassland Green Infrastructure.
+1.	DISPERSAL LIMITATION, EUTROPHICATION AND PROPAGULE PRESSURE CONSTRAIN THE CONSERVATION VALUE OF GRASSLAND GREEN INFRASTRUCTURE
 2.	Higher Ecosystem Services Credits derive from targeted Grassland Green Infrastructure management.
 
 Codes are copyrighted to DAP Hooftman, Lactuca: Environmental Data Analyses and Modelling, Diemen, The Netherlands.  
