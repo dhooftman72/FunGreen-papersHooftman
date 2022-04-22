@@ -104,12 +104,12 @@ for trait = List.Traits_Species
                 correlation.Data.Deviation(count) = PredictRun.correlation.Data.Deviation;
                 parameters.Beta(count,:) =  PredictRun.parameters.Beta;
                 parameters.Beta_PValue(count,:) = PredictRun.parameters.Beta_PValue;
-                %parameters.BIC(count) = -PredictRun.parameters.Stats.bic;
+                parameters.BIC(count) = -PredictRun.parameters.Stats.bic;
                 parameter.Rsquare(count) = PredictRun.parameters.Rsquare;
                 parameter.FvalueModel(count) = PredictRun.parameters.FvalueModel;
                 parameter.PvalueModel(count) = PredictRun.parameters.PvalueModel;
                 parameter.DFModel(count) = PredictRun.parameters.DFModel;
-                sensitivitiesAll(count,:) = PredictRun.SensiChanges(:,1); %#ok<*AGROW>
+                sensitivitiesAll(count,:) = PredictRun.SensiChanges(:,1);
                 sensitivitiesCountries(count,:,:) = PredictRun.SensiChanges(:,2:4);        
             end % Ignore
             delete(name_file)
@@ -125,7 +125,7 @@ for trait = List.Traits_Species
             correlation.Data.Deviation(1) = 0;
             parameters.Beta(1,1:6) =  0;
             parameters.Beta_PValue(1,1:6) =  0;
-            %parameters.BIC(1) = 0;
+            parameters.BIC(1) = 0;
             parameter.Rsquare(1) = 0;
             parameter.FvalueModel(1) = 0;
             parameter.PvalueModel(1) = 0;
@@ -165,8 +165,8 @@ for trait = List.Traits_Species
         Parameters.P_Model_std = [nanstd(parameter.PvalueModel)];
         Parameters.DF_Model_std = [nanstd(parameter.DFModel)];
         
-%         Parameters.BIC_mean = [nanmean(parameters.BIC)]; %#ok<*NBRAK>
-%         Parameters.BIC_std = [nanstd(parameters.BIC)];
+        Parameters.BIC_mean = [nanmean(parameters.BIC)]; %#ok<*NBRAK>
+        Parameters.BIC_std = [nanstd(parameters.BIC)];
         Parameters.B1_mean = [nanmean(parameters.Beta(:,1))];
         Parameters.B2_mean = [nanmean(parameters.Beta(:,2))];
         Parameters.B3_mean = [nanmean(parameters.Beta(:,3))];
@@ -207,7 +207,7 @@ for trait = List.Traits_Species
                             'DistancePO','GI_TotalPO','GI_RoadPO','GI_OtherLinearPO','GI_AreaPO'};
        %Initiate, so first collumns are the means
         SensitivitiesAll = dataset(0,'VarNames',nameStrucArray(1));
-        SensitivitiesCountries = dataset(0,'VarNames','DistanceP1');
+        SensitivitiesCountries = dataset(0,'VarNames','DistanceP1_2');
         for factor = 2:5
         SensitivitiesAll.(genvarname(char(nameStrucArray(factor))))  = 0;
         end
@@ -218,8 +218,6 @@ for trait = List.Traits_Species
         
         Predictions.(genvarname([char(List.Outputs(trait))])).Sensitivities.All(traittype,:) = SensitivitiesAll;
         Predictions.(genvarname([char(List.Outputs(trait))])).Sensitivities.Countries(traittype,:) = SensitivitiesCountries;
-        Predictions.(genvarname([char(List.Outputs(trait))])).Sensitivities.FullsensitivitMatrix.All = sensitivitiesAll;
-        Predictions.(genvarname([char(List.Outputs(trait))])).Sensitivities.FullsensitivitMatrix.Countries = sensitivitiesCountries;
         Predictions.(genvarname([char(List.Outputs(trait))])).(genvarname([char(traittext)])).Correlations = correlations;
         Predictions.(genvarname([char(List.Outputs(trait))])).(genvarname([char(traittext)])).Parameters = Parameters;
         Predictions.(genvarname([char(List.Outputs(trait))])).(genvarname([char(traittext)])).Segment_overview  = Segments_overview;
@@ -247,11 +245,12 @@ SensitivitiesAll.(genvarname([(char(nameStruc)),'Std'])) = nanstd(sens);
 [~,p,ci] = ttest(sens(isnan(sens)~=1), base(factor));
 SensitivitiesAll.(genvarname([(char(nameStruc)),'PO'])) = p;
 SensitivitiesAll.(genvarname([(char(nameStruc)),'ActualRuns'])) = length(sens(isnan(sens)~=1));
-[pCtry,psCtry,MeansCtry,StdsCtry] = difTest(InVarCountries(:,factor,:),InVarAll(:,factor));
+
+[pCtry,psCtry,MeansCtry,StdsCtry] = difTest(InVarCountries(:,factor,:));
 SensitivitiesAll.(genvarname([(char(nameStruc)),'RegionPdif'])) = pCtry;
-SensitivitiesCountries.(genvarname([(char(nameStruc)),'P1'])) = psCtry(1);
-SensitivitiesCountries.(genvarname([(char(nameStruc)),'P2'])) = psCtry(2);
-SensitivitiesCountries.(genvarname([(char(nameStruc)),'P3'])) = psCtry(3);
+SensitivitiesCountries.(genvarname([(char(nameStruc)),'P1_2'])) = psCtry(1);
+SensitivitiesCountries.(genvarname([(char(nameStruc)),'P1_3'])) = psCtry(2);
+SensitivitiesCountries.(genvarname([(char(nameStruc)),'P2_3'])) = psCtry(3);
 SensitivitiesCountries.(genvarname([(char(nameStruc)),'Mean_1'])) = MeansCtry(1);
 SensitivitiesCountries.(genvarname([(char(nameStruc)),'Mean_2'])) = MeansCtry(2);
 SensitivitiesCountries.(genvarname([(char(nameStruc)),'Mean_3'])) = MeansCtry(3);
@@ -260,13 +259,13 @@ SensitivitiesCountries.(genvarname([(char(nameStruc)),'Std_2'])) = StdsCtry(2);
 SensitivitiesCountries.(genvarname([(char(nameStruc)),'Std_3'])) = StdsCtry(3);
 end
 
-function [p,ps,Means,Stds] = difTest(InVar,InVarAll)
+function [p,ps,Means,Stds] = difTest(InVar)
 InVar(InVar<-2) = NaN;
 InVar(InVar>2) = NaN;
-[~,ps(1),~] = ttest2(InVar(:,1), InVarAll);
-[~,ps(2),~] = ttest2(InVar(:,2), InVarAll);
-[~,ps(3),~] = ttest2(InVar(:,3), InVarAll);
-p = nanmean(ps);
+[~,ps(1),~] = ttest(InVar(:,1), InVar(:,2));
+[~,ps(2),~] = ttest(InVar(:,1), InVar(:,3));
+[~,ps(3),~] = ttest(InVar(:,2), InVar(:,3));
+p = min(ps);
 Means =  nanmean(InVar);
 Stds = nanstd(InVar);
 end

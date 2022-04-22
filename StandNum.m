@@ -1,4 +1,4 @@
-function [Selection,SelectRadi] = StandNum(Input,List,Trans,SpeciesSegment,SelectRadi)
+function [Selection,SelectRadi] = StandNum(Input,List,Trans,SpeciesSegment,SelectRadi) %#ok<INUSL>
 Selection.maxtraits(Trans.maxi) = Trans.Traitmax; 
 name1 = ['Input.',Trans.naming,'(:,',num2str(Trans.tf(1)),')'];
 RichnessTrait = zeros(Trans.nrspeciesSegment,Trans.Traitmax);
@@ -6,11 +6,15 @@ CoverTrait = zeros(Trans.nrspeciesSegment,Trans.Traitmax);
 StrengthTrait = ones(Trans.nrspeciesSegment,Trans.Traitmax);
 if Trans.Traitmax == 1
     for x = 1:1:Trans.nrspeciesSegment
-        PresList = find(eval(name1)== SpeciesSegment(x,1));
+        PresList = find(eval(name1)== SpeciesSegment(x,1)); %#ok<*EFIND>
         name2 = ['Input.',Trans.naming,'(PresList,',num2str(Trans.tf(2)),')'];
         name3 = ['Input.',Trans.naming,'(PresList,',num2str(Trans.tf(3)),')'];
         if isempty(PresList) ~= 1
             RichnessTrait_T = (eval(name2));
+            LogList = find(max(Trans.maxi) == [18,29,31,32]);
+            if isempty(LogList) ~= 1
+                RichnessTrait_T = log10(RichnessTrait_T+1);
+            end
             CoverTrait_T = SpeciesSegment(x,2);
             if isnan(Trans.tf(3))~= 1
                 Strenght = (eval(name3));

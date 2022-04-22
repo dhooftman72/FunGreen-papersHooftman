@@ -1,7 +1,7 @@
 function MakeMeanTraits(Input,List)
 % select relevant Species only and Order to traits;
 % Segments are compared to their respective Focal sites as proportions.
-    for landscape = 1:1:36 % per landscape to make 1:1 comparisons
+    for landscape =  List.LandscapesToDo % per landscape to make 1:1 comparisons
         clc
         display('Running radiation statistics')
         display(landscape)
@@ -20,11 +20,11 @@ function MakeMeanTraits(Input,List)
             clear SpeciesSegmentID2
             SpeciesSegment = Input.GIReleveesSpecies(SpeciesSegmentFind,[1,4,7]); % 1) Species,2) cover,3)linear/areal
             nrspeciesSegment = length(SpeciesSegment(:,1));
-            Descriptives = Input.SegmentRecords((Input.SegmentRecords.SegmentID == segments_to_do),[1,3,2,14,10,11,15,16,17,20,21,28]);
+            Descriptives = Input.SegmentRecords((Input.SegmentRecords.SegmentID == segments_to_do),[1,3,2,14,10,11,15,16,17,20,21,28,43]);
             % 1.Segment ID, 2. Band,3. LandscapeID, 4. Country,
             % 5. linearGI, 6. ArealGI, 7 Road GI;
             % 8 Other linear GI 9 Segment yes/no 10 Shannon index 11 Total GI;
-            % 12. Size
+            % 12. Size; 13. Core size 14. CoreSize rank
             Distances = Input.SegmentRecords((Input.SegmentRecords.SegmentID == segments_to_do),[4,5,8,9,18,19,22,23,24,25,26,27,42]);
             % 1 Mean Current Cattle; 2 Minumum current Cattle; 3 Mean wind;
             % 4 Min Wind 5 Min Road 6 Mean road 7 Min
@@ -72,21 +72,22 @@ function MakeMeanTraits(Input,List)
             else
                 ecount = 0;
                 for x = 1:1:nrspeciesSegment
-                    if Input.species_option == 1 % OPTION 1:
+                    if List.species_option == 1 % OPTION 1:
                         % determine whether the species occurs in the SINGLE TARGET as
                         % well, else don't include the species
                         PresList = find(Species_this_Target == PresenceSegment(x,1));
-                    elseif Input.species_option == 2  % OPTION 2
+                    elseif List.species_option == 2  % OPTION 2
                         % determine whether the species occurs in ANY TARGET
                         PresList = find(AllTargetSpecies == PresenceSegment(x,1));
-                    elseif Input.species_option == 3  % OPTION 3:
+                    elseif List.species_option == 3  % OPTION 3:
                         %  Use ALL species
                         PresList = find(AllSpecies == PresenceSegment(x,1));
-                    elseif  Input.species_option == 4  % OPTION 4:
+                    elseif  List.species_option == 4  % OPTION 4:
                         % Species not in This argets
                         PresList = find(Species_Not_this_Target == PresenceSegment(x,1));
-                    elseif  Input.species_option == 5  % OPTION 5:
-                        % Incoming species: npt present in Targets
+                    elseif  List.species_option == 5  % OPTION 5:
+                        % Incoming species: not present in Targets:
+                        % Incoming species
                         PresList = find(Species_Not_all_Target == PresenceSegment(x,1));
                     end
                     if isempty(PresList)~= 1
@@ -96,9 +97,9 @@ function MakeMeanTraits(Input,List)
                         SpeciesSegment(ecount,3) = PresenceSegment(x,3); % Linear (1) or Area (2)
                     end  
                 end
-                if Input.Linear_option == 1 % Linear elements only
+                if List.Linear_option == 1 % Linear elements only
                     SpeciesSegment((SpeciesSegment(:,3) == 2),:) = [];
-                elseif Input.Linear_option == 2 % Area elements only
+                elseif List.Linear_option == 2 % Area elements only
                     SpeciesSegment((SpeciesSegment(:,3) == 1),:) = [];
                 else
                     %all species are selected, linear and area
@@ -115,14 +116,14 @@ function MakeMeanTraits(Input,List)
             % procedure as for All species differences. So this is per segment
             % and afterwards all analyses are based on proportional or numerical means
             % per traittype per segment
-            [SelectRadi,maxtraits] =  CollateTraits(Input,List,SpeciesSegment,nrspeciesSegment,segmentnr,segments_to_do,SelectRadi);
+            [SelectRadi,List.maxtraits] =  CollateTraits(Input,List,SpeciesSegment,nrspeciesSegment,segmentnr,segments_to_do,SelectRadi);
             clear SpeciesSegment
         end
         clear Species_Not_this_Target
         % Make proportions and put in readable formats per traittype within
         % traits
         for trait = 1:List.traits_to_do;
-            maxtrait = maxtraits(trait);
+            maxtrait = List.maxtraits(trait);
             for traittype = 1:maxtrait
                 Traitmatrix = SelectRadi.(genvarname([char(List.Outputs(trait))])).value(:,traittype);
                 Specmatrix = SelectRadi.(genvarname([char(List.Outputs(trait))])).nrspecs(:,traittype);
@@ -143,7 +144,7 @@ function MakeMeanTraits(Input,List)
                 clear traitmatrix
             end
             % Make it nice joined cell arrays
-            if landscape == 1
+            if landscape == List.LandscapesToDo(1)
                 PropRadi.(genvarname([char(List.Outputs(trait))])) = Prop_presence;
                 TotRadi.(genvarname([char(List.Outputs(trait))])) =  Tot_presence;
                 NrSpec.(genvarname([char(List.Outputs(trait))])) =  nr_species;
@@ -162,7 +163,7 @@ function MakeMeanTraits(Input,List)
             end
             clear Prop_presence Tot_presence nr_species Spec_loss
         end
-        if landscape == 1
+        if landscape == List.LandscapesToDo(1)
             PropRadi.nrTargetspeciessegment = SelectRadi.nrTargetspeciessegment;
             PropRadi.SpeciesSegmentIDs = SpeciesSegmentIDs;
             
@@ -173,5 +174,5 @@ function MakeMeanTraits(Input,List)
         clear SelectRadi Selection SpeciesSegmentIDs
     end % per landscape 
     %%
-    save('Radiation_proportions', 'List','PropRadi','TotRadi','NrSpec','maxtraits', 'Input','SpecLoss','SizeProp','Species_Not_all_Target','AllTargetSpecies')
+    save('Radiation_proportions', 'List','PropRadi','TotRadi','NrSpec','Input','SpecLoss','SizeProp','Species_Not_all_Target','AllTargetSpecies')
 end

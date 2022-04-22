@@ -29,20 +29,40 @@ xD =[xD,Outs.CountryC];
 MaX = max(Outs.yD);
 %% Do the multiple variable fitting
 clear prior
-prior = [Outs.Disrico,Outs.Totalrico,Outs.LinRoadrico,Outs.LinOtherrico,Outs.Arearico,Outs.constant,0];
-series = [1 2 3 4 5 6 7];
-seriesRand = [7];
-modelFun = @(b,xD,MaX) (b(1).*xD(:,1)) + (b(2).*xD(:,2)) + (b(3).*xD(:,3)) + (b(4).*xD(:,4)) + (b(5).*xD(:,5))+ b(6)+  (b(7).*xD(:,6));
+% prior = [Outs.Disrico,Outs.Totalrico,Outs.LinRoadrico,Outs.LinOtherrico,Outs.Arearico,Outs.constant,0];
+% series = [1 2 3 4 5 6];
+% seriesRand = [6];
+% modelFun = @(b,xD,MaX) (b(1).*xD(:,1)) + (b(2).*xD(:,2)) + (b(3).*xD(:,3)) + (b(4).*xD(:,4)) + (b(5).*xD(:,5))+ b(6);
+% modelFunw = @(b,xD)modelFun(b,xD,MaX);
+% Options = statset('FunValCheck','off','Display','off','MaxIter',100,...
+%     'TolFun',1.0000e-4, 'TolX',1.0e-4, 'Jacobian','off', 'DerivStep', 6.0555e-05, 'OutputFcn',' ');
+% Group = grp2idx(Outs.CountryC);%[1:length(yD)];
+%     [bFit,~,stats] = nlmefit(xD,Outs.yD,Group,[],modelFunw,prior,'RefineBeta0','off','Options',Options,'FEParamsSelect',series,'REParamsSelect',seriesRand); %#ok<*NASGU>
+
+prior = [Outs.Disrico,Outs.Totalrico,Outs.constant];
+series = [1 2 3];
+seriesRand = [3];
+modelFun = @(b,xD,MaX) (b(1).*xD(:,1)) + (b(2).*xD(:,2)) + b(3);
 modelFunw = @(b,xD)modelFun(b,xD,MaX);
 Options = statset('FunValCheck','off','Display','off','MaxIter',100,...
     'TolFun',1.0000e-4, 'TolX',1.0e-4, 'Jacobian','off', 'DerivStep', 6.0555e-05, 'OutputFcn',' ');
 Group = grp2idx(Outs.CountryC);%[1:length(yD)];
-    [bFit,~,stats] = nlmefit(xD,Outs.yD,Group,[],modelFunw,prior,'RefineBeta0','off','Options',Options,'FEParamsSelect',series,'REParamsSelect',seriesRand); %#ok<*NASGU>
-Res_Country(1) = 0;
-Res_Country(2) = nanmean(stats.pres(find(Outs.CountryC ==1)));
-Res_Country(3) = nanmean(stats.pres(find(Outs.CountryC ==2)));
-Res_Country(4) = nanmean(stats.pres(find(Outs.CountryC ==3)));
-z = bFit./stats.sebeta';
+    [bFitOne,~,statsOne] = nlmefit(xD,Outs.yD,Group,[],modelFunw,prior,'RefineBeta0','off','Options',Options,'FEParamsSelect',series,'REParamsSelect',seriesRand); %#ok<*NASGU>    
+    
+prior = [Outs.LinRoadrico,Outs.LinOtherrico,Outs.Arearico];
+series = [1 2 3];
+seriesRand = [3];
+modelFun = @(bdue,xD,MaX) (bdue(1).*xD(:,3)) + (bdue(2).*xD(:,4)) + (bdue(3).*xD(:,5));
+modelFunw = @(bdue,xD)modelFun(bdue,xD,MaX);
+Options = statset('FunValCheck','off','Display','off','MaxIter',100,...
+     'TolFun',1.0000e-4, 'TolX',1.0e-4, 'Jacobian','off', 'DerivStep', 6.0555e-05, 'OutputFcn',' ');
+ Group = grp2idx(Outs.CountryC);%[1:length(yD)];
+     [bFitdue,~,stats] = nlmefit(xD,statsOne.pres,Group,[],modelFunw,prior,'RefineBeta0','off','Options',Options,'FEParamsSelect',series,'REParamsSelect',seriesRand); %#ok<*NASGU>   
+
+series = [1 2 3 4 5 6];
+bFit = [bFitOne(1:2);bFitdue;bFitOne(3)];
+Stats.sebeta = [statsOne.sebeta(1:2),stats.sebeta,statsOne.sebeta(3)];
+z = bFit./Stats.sebeta';
 pvalu = 2*(1 - normcdf(abs(z)));
 bFitw = NaN(max(series),1);
 pvalue = NaN(max(series),1);
@@ -53,12 +73,13 @@ end
 clear pvalu bFit
 bFitCheck = reshape(bFitw,length(bFitw),1);
 for t = 1:1:length(xD(:,1))
+    modelFun = @(b,xD,MaX) (b(1).*xD(:,1)) + (b(2).*xD(:,2)) + (b(3).*xD(:,3)) + (b(4).*xD(:,4)) + (b(5).*xD(:,5))+ b(6);
     expect = modelFun(bFitCheck,xD,MaX);
 end
 mdl = LinearModel.fit(expect,Outs.yD);
 tbl = anova(mdl);
 parameters.Beta = bFitw;
-parameters.Stats = stats;
+%parameters.Stats = stats;
 parameters.Beta_PValue = pvalue;
 parameters.Rsquare = mdl.Rsquared.Adjusted;
 parameters.FvalueModel = tbl.F(1);
@@ -80,8 +101,7 @@ datapoints = length(ToTestyDMarg);
 %% Do logaritmic predictions and STATS
 Beta = parameters.Beta;
 for i = 1:1:length(ToTestyDMarg)
-    yPredicted(i) =  (Beta(1).*xD(i,1)) + (Beta(2).*xD(i,2)) + (Beta(3).*xD(i,3)) + (Beta(4).*xD(i,4)) + (Beta(5).*xD(i,5)) + Beta(6) +...
-    (Beta(7).*xD(i,6));
+    yPredicted(i) =  (Beta(1).*xD(i,1)) + (Beta(2).*xD(i,2)) + (Beta(3).*xD(i,3)) + (Beta(4).*xD(i,4)) + (Beta(5).*xD(i,5)) + Beta(6);
 end
 yPredicted = reshape(yPredicted,[],1);
 yPredic_SensBase = nanmean(yPredicted); % so this is 1 value for sensitivity analyses
@@ -109,18 +129,11 @@ PredictRun.Xnumbers = [Outs.TestingIDsC,xD];
 PredictRun.NumbersTested = Numbers_testing; %#ok<*STRNU>
 %% Sensitivity_module
 Sense_factor = List.sense_factor;
-% save('all')
-% ccc
 Sensi_predic(:,1) = SensPredic(xDOrg,ToTestyDMarg,Sense_factor,trait,Beta,yPredic_SensBase,0);
 for CIt = 2:1:4
     Lister =  find(Outs.CountryC == (CIt-1));
-    Sensi_predic(:,CIt) = SensPredic(xDOrg(Lister,:),ToTestyDMarg(Lister,:),Sense_factor,trait,Beta,yPredic_SensBase,Res_Country(CIt));
+    Sensi_predic(:,CIt) = SensPredic(xDOrg(Lister,:),ToTestyDMarg(Lister,:),Sense_factor,trait,Beta,yPredic_SensBase,0);
 end
-% 
-% 
-% for CIt = 1:1:4
-%     Sensi_predic(:,CIt) = SensPredic(xDOrg,ToTestyDMarg,Sense_factor,trait,Beta,yPredic_SensBase,Res_Country(CIt));
-% end
 %clearvars -except loop List PropRadi trait traittype Landscape_toGet_* PredictRun Sensi_predic Res_Country
 PredictRun.SensiChanges = Sensi_predic;
 
@@ -145,17 +158,17 @@ Ins.TestingIDs = PropRadi.SpeciesSegmentIDs.SegmentID(Numbers);
 Ins.TestingIDs = reshape(Ins.TestingIDs,[],1);
 List = find(isnan(Ins.Y)==1);
 if isempty(List)~= 1
-    Ins.Y(List) = [];
-    Ins.Area(List) = [];
-    Ins.LinRoad(List) = [];
-    Ins.LinOther(List) = [];
-    Ins.Country(List) = [];
-    Ins.Landscape(List) = [];
-    Ins.SegmentBinar(List) = [];
-    Ins.total_GI(List) = [];
-    Ins.X(List) = [];
-    Ins.TestingIDs(List) = [];
-    Ins.TestingIDs = reshape(Ins.TestingIDs,[],1);
+Ins.Y(List) = [];
+Ins.Area(List) = [];
+Ins.LinRoad(List) = [];
+Ins.LinOther(List) = [];
+Ins.Country(List) = [];
+Ins.Landscape(List) = [];
+Ins.SegmentBinar(List) = [];
+Ins.total_GI(List) = [];
+Ins.X(List) = [];
+Ins.TestingIDs(List) = [];
+Ins.TestingIDs = reshape(Ins.TestingIDs,[],1);
 end
 end % function MakeIns
 
@@ -196,7 +209,7 @@ end
 function Sensi_predic = SensPredic(xDOrg,ToTestyDMarg,Sense_factor,trait,Beta,~,Cor_factor)
 for i = 1:1:length(ToTestyDMarg)
     yPredicted(i) = (Beta(1).*xDOrg(i,1)) + (Beta(2).*xDOrg(i,2)) + (Beta(3).*xDOrg(i,3)) + (Beta(4).*xDOrg(i,4)) +...
-        (Beta(5).*xDOrg(i,5)) + Beta(6) + (Beta(7).*xDOrg(i,6))+ Cor_factor;
+        (Beta(5).*xDOrg(i,5)) + Beta(6) - Cor_factor;
 end
 yPredic_SensBase = nanmean(yPredicted);
 
@@ -242,7 +255,7 @@ end % Funtion SensiPredic
 function Sensi_predic = SensPredicFunc(Sensi_predic,factor,ToTestyDMarg,Sense_factor,Beta,xCalc,basemode,yPredic_SensBase,Cor_factor)
 for i = 1:1:length(ToTestyDMarg)
     yPredict(i) = (Beta(1).*xCalc(i,1)) + (Beta(2).*xCalc(i,2)) +...
-        (Beta(3).*xCalc(i,3)) + (Beta(4).*xCalc(i,4)) + (Beta(5).*xCalc(i,5)) + Beta(6)+ (Beta(7).*xCalc(i,6))+ Cor_factor;
+        (Beta(3).*xCalc(i,3)) + (Beta(4).*xCalc(i,4)) + (Beta(5).*xCalc(i,5)) + Beta(6)- Cor_factor;
 end
 yPredic = nanmean(reshape(yPredict,[],1)); % so this is 1 value
 Sensi_predic(factor) = abs((-(((abs(basemode-yPredic))./(abs(basemode-yPredic_SensBase)))-1)))./Sense_factor;

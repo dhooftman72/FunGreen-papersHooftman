@@ -16,6 +16,10 @@ Traitmaxs(Trans.maxi) = Trans.Traitmax;
 [Selection,~] = StandNum(Input,List,Trans,SpeciesSegment,SelectRadi);
 SelectRadi.Species.value(Trans.segmentnr,1) =  Selection.nrspecs;
 SelectRadi.Species.nrspecs(Trans.segmentnr,1) =  Selection.nrspecs;
+Trans.maxi = 36;
+SelectRadi.LogSpecies.value(Trans.segmentnr,1) =  log10(Selection.nrspecs+1);
+SelectRadi.LogSpecies.nrspecs(Trans.segmentnr,1) =  log10(Selection.nrspecs+1);
+Traitmaxs(Trans.maxi) = Trans.Traitmax;
 
 %% Shannon Diversity
 Trans.Traitmax = 1;
@@ -98,14 +102,14 @@ S = Input.Grimetranslation(:,1);
 C = Input.Grimetranslation(:,2);
 R = Input.Grimetranslation(:,3);
 
-Selects(1) = sum(bsxfun(@times,RichnessTrait,S'));
-Selects(2) = sum(bsxfun(@times,RichnessTrait,C'));
+Selects(1) = sum(bsxfun(@times,RichnessTrait,C'));
+Selects(2) = sum(bsxfun(@times,RichnessTrait,S'));
 Selects(3) = sum(bsxfun(@times,RichnessTrait,R'));
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).value(segmentnr,:)  = Selects;
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).nrspecs(segmentnr,:) = [Selection.nrspecs, Selection.nrspecs, Selection.nrspecs];
 
-Selects_Cover(1) = sum(bsxfun(@times,CoverTrait,S'));
-Selects_Cover(2) = sum(bsxfun(@times,CoverTrait,C'));
+Selects_Cover(1) = sum(bsxfun(@times,CoverTrait,C'));
+Selects_Cover(2) = sum(bsxfun(@times,CoverTrait,S'));
 Selects_Cover(3) = sum(bsxfun(@times,CoverTrait,R'));
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).value(segmentnr,:)  =  Selects_Cover;
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).nrspecs(segmentnr,:) = [Selection.nrspecs, Selection.nrspecs, Selection.nrspecs];
@@ -149,7 +153,6 @@ CoverTrait =  CoverTrait(to_take);
 CoverTrait = reshape(CoverTrait,length(CoverTrait),1);
 Nr_covers =  (bsxfun(@times, RichnessTrait,CoverTrait));
 nrspecs = length(RichnessTrait);
-Total_cover(segmentnr,1) = sum(CoverTrait);
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).value(segmentnr,1)  = 10^(mean(RichnessTrait));
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).value(segmentnr,1)  =  sum(Nr_covers)./sum(CoverTrait);
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).nrspecs(segmentnr,1) =  nrspecs;
@@ -259,7 +262,7 @@ SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).nrspecs(segmentnr,:) = 
 clear RichnessTrait CoverTrait StrengthTrait TotalCoverSegment disp i x
 clear Traitmax Selects Selects_Cover nrspecs 
 %% Habitat type CATEGORICAL TRAIT 
-Trans.Traitmax = 6; %START CORRECTINBGH FROM HERE
+Trans.Traitmax = 6; 
 Trans.maxi = [21,22];
 Trans.prop = Trans.maxi(1);
 Trans.cover = Trans.maxi(2);
@@ -369,14 +372,16 @@ Ruder = cell2mat(Input.Habitattxt_short(:,5));
 Selects(1) = sum(bsxfun(@times,RichnessTrait,Grass'));
 Selects(2) = sum(bsxfun(@times,RichnessTrait,Wood'));
 Selects(3) = sum(bsxfun(@times,RichnessTrait,Ruder'));
+Selects = Selects./sum(Selects);
+
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).value(segmentnr,:)  = Selects ;
 SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).nrspecs(segmentnr,:) = [SelectRadi.Species.nrspecs(segmentnr,1),...
                                                                           SelectRadi.Species.nrspecs(segmentnr,1),...
                                                                           SelectRadi.Species.nrspecs(segmentnr,1)];
-
 Selects_Cover(1) = sum(bsxfun(@times,CoverTrait,Grass'));
 Selects_Cover(2) = sum(bsxfun(@times,CoverTrait,Wood'));
 Selects_Cover(3) = sum(bsxfun(@times,CoverTrait,Ruder'));
+Selects_Cover = Selects_Cover./sum(Selects_Cover);
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).value(segmentnr,:)  = Selects_Cover;
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).nrspecs(segmentnr,:) = [SelectRadi.Species.nrspecs(segmentnr,1),...
                                                                           SelectRadi.Species.nrspecs(segmentnr,1),...
@@ -508,8 +513,17 @@ nrspecs= length(RichnessTrait);
 
 SelectRadi.(genvarname([char(List.Outputs(Trans.prop))])).value(segmentnr,1)  =  sum(RichnessTrait);
 SelectRadi.(genvarname([char(List.Outputs(Trans.prop))])).nrspecs(segmentnr,1) =  nrspecs;
+
+Trans.maxi = 37;
+Trans.prop = Trans.maxi(1);
+Traitmaxs(Trans.maxi) = Trans.Traitmax;
+SelectRadi.(genvarname([char(List.Outputs(Trans.prop))])).value(segmentnr,1)  =  log10(sum(RichnessTrait)+1);
+SelectRadi.(genvarname([char(List.Outputs(Trans.prop))])).nrspecs(segmentnr,1) =  nrspecs;
+
 clear RichnessTrait CoverTrait StrengthTrait TotalCoverSegment disp i x
 clear Traitmax Selects Selects_Cover  nrspecs
+
+
 
 %% Amount of Pollinator visits based on Germany. NUMERIC TRAIT, Note summatation over all species!!
 Trans.Traitmax = 1;
@@ -551,7 +565,6 @@ SelectRadi.(genvarname(char(List.Outputs(Trans.prop)))).nrspecs(segmentnr,1) =  
 SelectRadi.(genvarname(char(List.Outputs(Trans.cover)))).nrspecs(segmentnr,1) =  nrspecs;
 clear RichnessTrait CoverTrait StrengthTrait TotalCoverSegment disp i x
 clear Traitmax Selects Selects_Cover nrspecs
-
 %% Carbon per leaf weighted. NUMERIC TRAIT, COVER ONLY
 Trans.Traitmax = 1;
 Trans.maxi =28;

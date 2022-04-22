@@ -48,9 +48,9 @@ for trait = List.Traits_Species
         Data.Species_loss = SpecLoss;
         % test for enough data
         %%
-       tes = sum(isnan(Data.Y ));
+        tes = sum(isnan(Data.Y ));
         Regression.TooFewData = {'Dummy'};
-       if tes < (length(Data.Y )/4) % test for enough data
+        if tes < (length(Data.Y )/4) % test for enough data
             % Set data and test for NaN within Y;
             Data.total_GI = PropRadi.SpeciesSegmentIDs.TotalGIAdam;
             Data.Area =  PropRadi.SpeciesSegmentIDs.AreaGI;
@@ -61,6 +61,7 @@ for trait = List.Traits_Species
             Data.SegmentBinar = PropRadi.SpeciesSegmentIDs.Segment;
             Data.Band = PropRadi.SpeciesSegmentIDs.Band;
             Data.IsSegment = PropRadi.SpeciesSegmentIDs.Segment;
+            Data.CoreSize = PropRadi.SpeciesSegmentIDs.CoreSize;
             
             test = find(isnan(Data.Y) == 1);
             Data = removeTest(Data,test);
@@ -126,19 +127,18 @@ for trait = List.Traits_Species
                 ds = dataset(Data.Yuncor,'Varnames','Yuncor');
                 ds.Country = ordinal(Data.Country);
                 ds.Landscape = ordinal(Data.Landscape);
+                ds.CoreSize = Data.CoreSize;
                 ds.Segments = logical(Data.IsSegment);
-                [~,outs,stats] = anovan(ds.Yuncor,{ds.Country,ds.Landscape,ds.Segments},'sstype',1,...
-                    'model',[1 0 0 ; 0 1 0 ; 0 0 1 ; 1 0 1],'nested',[0 0 0; 1 0 0; 0 0 0],'random', [2], 'display', 'off',...
-                    'varnames', {'Data.Country','Data.Landscape','Segments'});
+                [~,outs,stats] = anovan(ds.Yuncor,{ds.Country,ds.CoreSize,ds.Segments},'sstype',1,...
+                    'model',[1 0 0; 0 1 0; 0 0 1;1 0 1],'continuous',[2], 'display', 'off',...
+                    'varnames', {'Country','CoreSize','Segments'});
+                save('all')
                 Value_Dis = Data.Yuncor - stats.resid;
+
                 Significance_segment(1) = outs(4,6);
                 Significance_segment(2) = outs(4,7);
                 Significance_segment(3) = outs(5,6);
                 Significance_segment(4) = outs(5,7);
-                Significance_segment(6) =  outs(2,6);
-                Significance_segment(7) =  outs(2,7);
-                Significance_segment(8) =  outs(3,6);
-                Significance_segment(9) =  outs(3,7);
                 [~,ps] = jbtest(stats.resid);
                 Significance_segment(5) = {ps};
                 Data.Spec_target_All(:,1) = Value_Dis(segments);
@@ -188,6 +188,7 @@ for trait = List.Traits_Species
                 AllValues.AreaGI = Data.Area;
                 AllValues.Country = Data.Country;
                 AllValues.Landscape = Data.Landscape;
+                AllValues.CoreSite = Data.CoreSize;
                 AllValues.Band = Data.Band;
                 AllValues.Ys = Data.Y;
                 AllValues.Yuncorrected = Data.Yuncor;
@@ -205,6 +206,7 @@ for trait = List.Traits_Species
                 AreaC = Data.Area(segments);
                 CountryC = Data.Country(segments);
                 LandscapeC = Data.Landscape(segments);
+                CoreSizeC = Data.CoreSize(segments);
                 
                 Segments = dataset(DistanceC,'Varnames',char(AnType));
                 Segments.TotalGI = total_GIC;
@@ -213,6 +215,7 @@ for trait = List.Traits_Species
                 Segments.AreaGI = AreaC;
                 Segments.Country = CountryC;
                 Segments.Landscape = LandscapeC;
+                Segments.CoreSize = CoreSizeC;
                 Segments.Ys = yC;
                 Segments.Band = Data.Band(segments);
                 Segments.Yuncorrected = Data.Yuncor(segments);
@@ -226,23 +229,36 @@ for trait = List.Traits_Species
                 Roads_Actual = LinRoadC;
                 Linear_Other_actual = LinOtherC;
                 Area_GI_Actual = AreaC;
-                VarNames_1 = {'Country', 'Landscape', AnType,'Total GI'};
+                VarNames_1 = {'Country', 'CoreSize'};
+                VarNames_1a = {'Country', AnType,'Total GI'};
                 VarNames_2 = {'Country','Road verges','Other Linear GI','Areal GI'};
                 Anova_Table = dataset({'Dummy'},'Varnames',char('Source'));
-                % Two tiered GLM anovan
-                [~,outs,stats]= anovan((yC),{CountryC,LandscapeC,(log10(DistanceC+1)),(log10(Total_GIactual +1))},'sstype',3,...
-                    'model',[1 0 0 0; 0 1 0 0; 0 0 1 0 ; 0 0 0 1; 1 0 1 0; 1 0 0 1],'nested',[0 0 0 0; 1 0 0 0; 0 0 0 0 ; 0 0 0 0 ],'display', 'off',...
-                    'continuous',[3,4], 'random', [2], 'varnames', VarNames_1);
-                Anova_Table.Source([1,2,3,4,8,9,13,14],1) =  outs(2:9,1);
-                Anova_Table.SumSq([1,2,3,4,8,9,13,14],1) = cell2mat(outs(2:9,2));
-                Anova_Table.DFs([1,2,3,4,8,9,13,14],1) = cell2mat(outs(2:9,3));
-                Anova_Table.MeanSq([1,2,3,4,8,9,13],1) = cell2mat(outs(2:8,5));
-                Anova_Table.F([1,2,3,4,8,9],1) = cell2mat(outs(2:7,6));
-                Anova_Table.Pvalue([1,2,3,4,8,9],1) = cell2mat(outs(2:7,7));
+                % Three tiered GLM anovan
+                [~,outs,stats]= anovan((yC),{CountryC,CoreSizeC},'sstype',1,...
+                    'model',[1 0; 0 1],'nested',[0 0; 1 0], 'display', 'off',...
+                    'continuous',[2], 'varnames', VarNames_1);
+                Anova_Table.Source([1,2,13,14],1) =  outs(2:5,1);
+                Anova_Table.SumSq([1,2,13,14],1) = cell2mat(outs(2:5,2));
+                Anova_Table.DFs([1,2,13,14],1) = cell2mat(outs(2:5,3));
+                Anova_Table.MeanSq([1,2,13],1) = cell2mat(outs(2:4,5));
+                Anova_Table.F([1,2],1) = cell2mat(outs(2:3,6));
+                Anova_Table.Pvalue([1,2],1) = cell2mat(outs(2:3,7));
                 Stats.AnovaTableT1.outs = outs;
                 Stats.AnovaTableT1.stats = stats;
                 
-                [~,outs2,stats2]= anovan((stats.resid),{CountryC,(log10(Roads_Actual+1)),(log10(Linear_Other_actual+1)),(log10(Area_GI_Actual+1))},'sstype',3,...
+                [~,outs1a,stats1a]= anovan((stats.resid),{CountryC,(log10(DistanceC+1)),(log10(Total_GIactual +1))},'sstype',3,...
+                    'model',[0 1 0; 0 0 1; 1 1 0; 1 0 1],'display', 'off',...
+                    'continuous',[2,3], 'varnames', VarNames_1a);
+                Anova_Table.Source([3,4,8,9],1) =  outs1a(2:5,1);
+                Anova_Table.SumSq([3,4,8,9],1) = cell2mat(outs1a(2:5,2));
+                Anova_Table.DFs([3,4,8,9],1) = cell2mat(outs1a(2:5,3));
+                Anova_Table.MeanSq([3,4,8,9],1) = cell2mat(outs1a(2:5,5));
+                Anova_Table.F([3,4,8,9],1) = cell2mat(outs1a(2:5,6));
+                Anova_Table.Pvalue([3,4,8,9],1) = cell2mat(outs1a(2:5,7));
+                Stats.AnovaTableT1a.outs = outs1a;
+                Stats.AnovaTableT1a.stats = stats1a;
+                
+                [~,outs2,stats2]= anovan((stats1a.resid),{CountryC,(log10(Roads_Actual+1)),(log10(Linear_Other_actual+1)),(log10(Area_GI_Actual+1))},'sstype',3,...
                     'model',[0 1 0 0; 0 0 1 0 ; 0 0 0 1; 1 1 0 0; 1 0 1 0; 1 0 0 1],'display', 'off',...
                     'continuous',[2,3,4], 'varnames', VarNames_2);
                 Anova_Table.Source([5,6,7,10,11,12],1) = outs2(2:7,1);
@@ -253,22 +269,22 @@ for trait = List.Traits_Species
                 Anova_Table.Pvalue([5,6,7,10,11,12],1) = cell2mat(outs2(2:7,7));
                 Stats.AnovaTableT2.outs = outs2;
                 Stats.AnovaTableT2.stats = stats2;
-                
-               % take the right coefficient row if not all landcsapes are
-                % included.
-                test = find(isnan(yC) ==1);
-                LandscapeCValue = LandscapeC;
-                 CountryCValue = CountryC;  
-                LandscapeCValue(test) = NaN; %#ok<*FNDSB>
-                 CountryCValue(test) = NaN;
-                Actual_Data.Landscapes= sort(unique(LandscapeCValue(isnan(LandscapeCValue) ~= 1)));
-                Actual_Data.Countries= sort(unique(CountryCValue(isnan(LandscapeCValue) ~= 1)));
-                 clear test
-                
-                Disnr = 5 + length(Actual_Data.Landscapes);
-                Disrico = stats.coeffs(Disnr);
-                Totalnr = 6 + length(Actual_Data.Landscapes);
-                Totalrico = stats.coeffs(Totalnr);
+
+%                % take the right coefficient row if not all landcsapes are
+%                 % included.
+%                 test = find(isnan(yC) ==1);
+%                 LandscapeCValue = LandscapeC;
+%                  CountryCValue = CountryC;  
+%                 LandscapeCValue(test) = NaN; %#ok<*FNDSB>
+%                  CountryCValue(test) = NaN;
+%                 Actual_Data.Landscapes= sort(unique(LandscapeCValue(isnan(LandscapeCValue) ~= 1)));
+%                 Actual_Data.Countries= sort(unique(CountryCValue(isnan(LandscapeCValue) ~= 1)));
+%                  clear test
+
+                %Disnr = 5 + length(Actual_Data.Landscapes);
+                Disrico = stats1a.coeffs(2);
+                %Totalnr = 6 + length(Actual_Data.Landscapes);
+                Totalrico = stats1a.coeffs(3);
                 LinRoadrico = stats2.coeffs(2);
                 LinOtherrico = stats2.coeffs(3);
                 Arearico = stats2.coeffs(4);
@@ -416,13 +432,9 @@ for trait = List.Traits_Species
                     %Data.SegmentDifference = Data.Spec_target_l(:,:)-1;
                     DifferenceFocal.SegmentMean(traittype) = nanmean([(nanmean(Data.Spec_target_C1-1)),(nanmean(Data.Spec_target_C2-1)),(nanmean(Data.Spec_target_C3-1))]);
                     DifferenceFocal.SegmentStD(traittype) = nanmean([(nanstd(Data.Spec_target_C1-1)),(nanstd(Data.Spec_target_C2-1)),(nanstd(Data.Spec_target_C3-1))]);
-                    DifferenceFocal.F_Country(traittype) = cell2mat(Significance_segment(6));
-                    DifferenceFocal.P_Value_Country(traittype) = cell2mat(Significance_segment(7));
-                    DifferenceFocal.F_Landscape(traittype) = cell2mat(Significance_segment(8));
-                    DifferenceFocal.P_Value_Landscape(traittype) = cell2mat(Significance_segment(9));
+                    DifferenceFocal.P_NormalityResiduals(traittype)  = cell2mat(Significance_segment(5));
                     DifferenceFocal.F_Interaction(traittype) = cell2mat(Significance_segment(3));
                     DifferenceFocal.P_Value_InteractionDifference(traittype) = cell2mat(Significance_segment(4));
-                    DifferenceFocal.P_NormalityResiduals(traittype)  = cell2mat(Significance_segment(5));
                     DifferenceFocal.Country_1_Mean(traittype,1) = DifferenceFocal.SegmentMean(traittype) - Data.Countries(1);
                     DifferenceFocal.Country_2_Mean(traittype,1) = DifferenceFocal.SegmentMean(traittype) - Data.Countries(2);
                     DifferenceFocal.Country_3_Mean(traittype,1) = DifferenceFocal.SegmentMean(traittype) - Data.Countries(3);
@@ -479,7 +491,7 @@ for trait = List.Traits_Species
             Distances.overview_Effect = dataset(Distance.overviewEffect(:,1),'ObsNames',Name,'VarNames',Input.(genvarname([char(List.trait_txts(trait))]))(1,2));
             Distances.overview_R2Model = dataset(Distance.overviewR2model(:,1),'ObsNames',Name,'VarNames',Input.(genvarname([char(List.trait_txts(trait))]))(1,2));
             Rank = dataset((int8(tiedrank(1-(Distance.overviewR2model(1:7,1))))),'ObsNames',Name(1:7),'VarNames',Input.(genvarname([char(List.trait_txts(trait))]))(1,2));
-            for i = 2:size(Distance.overview,2)
+            for i = 2:maxtrait
                 Distances.overview.(genvarname([char(Input.(genvarname([char(List.trait_txts(trait))]))(i,2))])) = Distance.overview(:,i); %#ok<*NBRAK>
                 Distances.overview_P.(genvarname([char(Input.(genvarname([char(List.trait_txts(trait))]))(i,2))])) = Distance.overviewP(:,i);
                 Distances.overview_Effect.(genvarname([char(Input.(genvarname([char(List.trait_txts(trait))]))(i,2))])) = Distance.overviewEffect(:,i);
@@ -533,6 +545,7 @@ if exist('Org') ==1
     Data.SegmentBinar = Org.SegmentBinar;
     Data.total_GI = Org.total_GI;
     Data.IsSegment = Org.IsSegment;
+    Data.CoreSize = Org.CoreSize;
 else
     Org.y = Data.Y;
     Org.Yuncor = Data.Yuncor;
@@ -547,6 +560,7 @@ else
     Org.Band = Data.Band;
     Org.IsSegment = Data.IsSegment;
     Org.total_GI = Data.total_GI;
+   Org.CoreSize = Data.CoreSize;
 end
 Data.Y(test) = [];
 Data.total_GI(test) = [];
@@ -561,4 +575,5 @@ Data.Species_loss(test) = [];
 Data.SegmentBinar(test) = [];
 Data.Band(test) = [];
 Data.IsSegment(test) = [];
+Data.CoreSize(test) = [];
 end
